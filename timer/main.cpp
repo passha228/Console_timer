@@ -4,12 +4,21 @@
 #include <thread>
 #include <string>
 
+#ifdef _WIN32 || _WIN64
+const char* clearMsg = "cls";
+#endif
+
+#ifdef __unix__
+const char* clearMsg = "clear";
+#endif
+
+
 class Timer
 {
 private:
 	bool stopFlag = false;
-	struct tm* u;
-	time_t t;
+	struct tm* u = nullptr;
+	time_t t = 0;
 public:
 
 	void run()
@@ -36,7 +45,7 @@ public:
 	{
 		while (t > 0)
 		{
-			system("cls");
+			system(clearMsg);
 			std::string timeStr = "";
 			timeStr += std::to_string(u->tm_hour) + ":" + std::to_string(u->tm_min) + ":" + std::to_string(u->tm_sec);
 			std::cout << timeStr;
@@ -44,12 +53,21 @@ public:
 			t--;
 			u = gmtime(&t);
 		}
+
+		system(clearMsg);
+		std::cout << "Time is over\n" << "Write stop and press Enter to stop notify\n";
+
+		//create threads
+		std::thread t(&Timer::notify, this);
+		std::thread t1(&Timer::stopNotify, this);
+		t.join();
+		t1.join();
 	}
 
 	// notify about end of time
 	void notify()
 	{
-		while (true)
+		while (!stopFlag)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 			std::cout << "\a";
@@ -58,16 +76,16 @@ public:
 
 	void stopNotify()
 	{
-		char c = getchar();
-		if (c == '\n')
-			stopFlag = true;
+		std::string str;
+		while (str != "stop")
+		{
+			std::cin >> str;
+		}
+		stopFlag = true;
+		system("cls");
+		run();
 	}
 };
-
-
-
-
-
 
 
 int main()
